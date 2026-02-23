@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Acid Value Detector — Oil Analysis Lab</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;600;700&family=Exo+2:wght@300;400;700&display=swap');
+
+  :root {
+    --bg: #0a0e1a;
+    --panel: #0f1628;
+    --border: #1e3a5f;
+    --accent: #00d4ff;
+    --accent2: #ff6b35;
+    --green: #00ff88;
+    --yellow: #ffd700;
+    --red: #ff3366;
+    --text: #c8d8e8;
+    --dim: #4a6a8a;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Exo 2', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+    background-image:
+      radial-gradient(ellipse at 10% 20%, rgba(0,100,200,0.08) 0%, transparent 50%),
+      radial-gradient(ellipse at 90% 80%, rgba(0,212,255,0.06) 0%, transparent 50%);
+  }
+
+  .grid-bg {
+    position: fixed; inset: 0; z-index: 0;
+    background-image:
+      linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+  }
+
+  header {
+    position: relative; z-index: 10;
+    padding: 20px 40px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 16px;
+    background: rgba(15,22,40,0.9);
+    backdrop-filter: blur(10px);
+  }
+
+  .logo-icon {
+    width: 44px; height: 44px;
+    border: 2px solid var(--accent);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    box-shadow: 0 0 20px rgba(0,212,255,0.3);
+    animation: pulse-border 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse-border {
+    0%,100% { box-shadow: 0 0 20px rgba(0,212,255,0.3); }
+    50% { box-shadow: 0 0 35px rgba(0,212,255,0.6); }
+  }
+
+  header h1 {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700; font-size: 1.5rem;
+    letter-spacing: 2px;
+    color: var(--accent);
+    text-transform: uppercase;
+  }
+
+  header span {
+    font-size: 0.75rem; color: var(--dim);
+    letter-spacing: 1px;
+    display: block;
+    font-family: 'Share Tech Mono', monospace;
+  }
+
+  .badge {
+    margin-left: auto;
+    background: rgba(0,212,255,0.1);
+    border: 1px solid var(--accent);
+    border-radius: 4px;
+    padding: 4px 12px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--accent);
+    letter-spacing: 1px;
+  }
+
+  main {
+    position: relative; z-index: 5;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 30px 20px;
+    display: grid;
+    grid-template-columns: 340px 1fr;
+    gap: 24px;
+  }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .panel::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    opacity: 0.6;
+  }
+
+  .panel-title {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--accent);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  .panel-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .oil-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .oil-btn {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 8px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.25s;
+    font-family: 'Exo 2', sans-serif;
+    color: var(--text);
+    font-size: 0.8rem;
+  }
+
+  .oil-btn .oil-icon { font-size: 1.6rem; display: block; margin-bottom: 4px; }
+  .oil-btn .oil-name { font-weight: 600; display: block; color: #a0b8d0; }
+  .oil-btn .oil-type { font-size: 0.65rem; color: var(--dim); display: block; margin-top: 2px; }
+
+  .oil-btn:hover {
+    border-color: var(--accent);
+    background: rgba(0,212,255,0.05);
+    transform: translateY(-2px);
+  }
+
+  .oil-btn.selected {
+    border-color: var(--accent);
+    background: rgba(0,212,255,0.1);
+    box-shadow: 0 0 15px rgba(0,212,255,0.2);
+  }
+
+  .oil-btn.selected .oil-name { color: var(--accent); }
+
+  .input-group { margin-bottom: 16px; }
+
+  .input-group label {
+    display: block;
+    font-size: 0.72rem;
+    letter-spacing: 1.5px;
+    color: var(--dim);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+    font-family: 'Share Tech Mono', monospace;
+  }
+
+  .input-group input {
+    width: 100%;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 14px;
+    color: var(--accent);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.95rem;
+    transition: border-color 0.2s;
+    outline: none;
+  }
+
+  .input-group input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 10px rgba(0,212,255,0.15);
+  }
+
+  .run-btn {
+    width: 100%;
+    background: linear-gradient(135deg, #0080cc, #00d4ff);
+    border: none;
+    border-radius: 8px;
+    padding: 14px;
+    color: #000;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 1rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.25s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .run-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,212,255,0.4);
+  }
+
+  .run-btn:active { transform: translateY(0); }
+
+  .run-btn:disabled {
+    opacity: 0.5; cursor: not-allowed; transform: none;
+  }
+
+  .lab-area {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .burette-area {
+    background: rgba(0,0,0,0.3);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    display: flex;
+    gap: 30px;
+    align-items: flex-end;
+    min-height: 320px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .burette-area::before {
+    content: 'TITRATION CHAMBER';
+    position: absolute; top: 12px; left: 16px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--dim);
+    letter-spacing: 2px;
+  }
+
+  .burette-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .burette-label {
+    font-size: 0.65rem;
+    color: var(--dim);
+    font-family: 'Share Tech Mono', monospace;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+  }
+
+  .burette {
+    width: 30px;
+    height: 200px;
+    border: 2px solid rgba(150,200,255,0.5);
+    border-radius: 4px 4px 0 0;
+    background: rgba(200,230,255,0.05);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .burette-liquid {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    background: linear-gradient(180deg, rgba(100,200,255,0.6), rgba(50,150,255,0.8));
+    transition: height 0.5s ease;
+    height: 80%;
+  }
+
+  .burette-tip {
+    width: 6px; height: 20px;
+    background: rgba(150,200,255,0.5);
+    margin: 0 auto;
+    border-radius: 0 0 3px 3px;
+  }
+
+  .burette-scale {
+    position: absolute;
+    right: -24px; top: 0; bottom: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    font-size: 0.55rem;
+    color: var(--dim);
+    font-family: 'Share Tech Mono', monospace;
+  }
+
+  .flask-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+  }
+
+  .flask-svg { width: 140px; height: 180px; }
+
+  .flask-label {
+    font-size: 0.65rem;
+    color: var(--dim);
+    font-family: 'Share Tech Mono', monospace;
+    letter-spacing: 1px;
+    margin-top: 6px;
+    text-align: center;
+  }
+
+  .results-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+
+  .result-card {
+    background: rgba(0,0,0,0.3);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    text-align: center;
+    transition: all 0.3s;
+  }
+
+  .result-card.highlight {
+    border-color: var(--accent);
+    box-shadow: 0 0 20px rgba(0,212,255,0.15);
+  }
+
+  .result-card .rc-label {
+    font-size: 0.65rem;
+    color: var(--dim);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-family: 'Share Tech Mono', monospace;
+    margin-bottom: 8px;
+  }
+
+  .result-card .rc-value {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: var(--accent);
+  }
+
+  .result-card .rc-unit {
+    font-size: 0.6rem;
+    color: var(--dim);
+    margin-top: 2px;
+  }
+
+  .quality-section {
+    background: rgba(0,0,0,0.3);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 20px;
+  }
+
+  .quality-bar-bg {
+    background: rgba(255,255,255,0.05);
+    border-radius: 4px;
+    height: 10px;
+    overflow: hidden;
+    margin: 10px 0;
+  }
+
+  .quality-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 1.5s ease, background 0.5s;
+    width: 0%;
+  }
+
+  .quality-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.7rem;
+    color: var(--dim);
+    font-family: 'Share Tech Mono', monospace;
+  }
+
+  .log-box {
+    background: rgba(0,0,0,0.5);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+    height: 120px;
+    overflow-y: auto;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.72rem;
+    line-height: 1.7;
+  }
+
+  .log-entry { color: var(--dim); }
+  .log-entry.active { color: var(--green); }
+  .log-entry.warn { color: var(--yellow); }
+  .log-entry.done { color: var(--accent); }
+
+  .cursor-blink {
+    display: inline-block;
+    width: 6px; height: 12px;
+    background: var(--green);
+    animation: blink 1s step-end infinite;
+    vertical-align: text-bottom;
+  }
+
+  @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
+
+  .endpoint-indicator {
+    width: 60px; height: 60px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    margin: 0 auto 8px;
+    transition: background 1s, box-shadow 1s, border-color 0.5s;
+    background: transparent;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.6rem;
+    color: var(--dim);
+    font-family: 'Share Tech Mono', monospace;
+    text-align: center;
+  }
+
+  .endpoint-indicator.pink {
+    background: rgba(255,20,147,0.6);
+    border-color: #ff69b4;
+    box-shadow: 0 0 30px rgba(255,20,147,0.5);
+    color: white;
+  }
+
+  @media(max-width: 900px) {
+    main { grid-template-columns: 1fr; }
+  }
+
+  .step-indicator {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 16px;
+  }
+
+  .step-dot {
+    flex: 1;
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    transition: background 0.4s;
+  }
+
+  .step-dot.active { background: var(--accent); }
+  .step-dot.done { background: var(--green); }
+
+  .theory-box {
+    background: rgba(0,212,255,0.04);
+    border: 1px solid rgba(0,212,255,0.15);
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 16px;
+    font-size: 0.75rem;
+    line-height: 1.6;
+    color: #7a9ab8;
+    font-family: 'Share Tech Mono', monospace;
+  }
+
+  .theory-box strong { color: var(--accent); }
+
+  .reset-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 16px;
+    color: var(--dim);
+    cursor: pointer;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.8rem;
+    letter-spacing: 1px;
+    transition: all 0.2s;
+    margin-top: 10px;
+    width: 100%;
+  }
+
+  .reset-btn:hover {
+    border-color: var(--accent2);
+    color: var(--accent2);
+  }
+
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+</style>
+</head>
+<body>
+<div class="grid-bg"></div>
+
+<header>
+  <div class="logo-icon">🧪</div>
+  <div>
+    <h1>OilChem Analyzer</h1>
+    <span>ACID VALUE DETERMINATION — TITRATION SIMULATION v2.4</span>
+  </div>
+  <div class="badge">BSH22BS06 · EXP-09</div>
+</header>
+
+<main>
+  <!-- ═══════════════ LEFT PANEL ═══════════════ -->
+  <div>
+    <div class="panel" style="margin-bottom:20px">
+      <div class="panel-title">Select Oil Sample</div>
+
+      <div class="oil-grid" id="oilGrid">
+        <button class="oil-btn" data-oil="coconut" onclick="selectOil(this)">
+          <span class="oil-icon">🥥</span>
+          <span class="oil-name">Coconut</span>
+          <span class="oil-type">Edible · Virgin</span>
+        </button>
+        <button class="oil-btn" data-oil="sunflower" onclick="selectOil(this)">
+          <span class="oil-icon">🌻</span>
+          <span class="oil-name">Sunflower</span>
+          <span class="oil-type">Edible · Refined</span>
+        </button>
+        <button class="oil-btn" data-oil="palm" onclick="selectOil(this)">
+          <span class="oil-icon">🌴</span>
+          <span class="oil-name">Palm</span>
+          <span class="oil-type">Edible · Crude</span>
+        </button>
+        <button class="oil-btn" data-oil="mustard" onclick="selectOil(this)">
+          <span class="oil-icon">🌿</span>
+          <span class="oil-name">Mustard</span>
+          <span class="oil-type">Edible · Cold-press</span>
+        </button>
+        <button class="oil-btn" data-oil="olive" onclick="selectOil(this)">
+          <span class="oil-icon">🫒</span>
+          <span class="oil-name">Olive</span>
+          <span class="oil-type">Edible · Extra Virgin</span>
+        </button>
+        <button class="oil-btn" data-oil="engine" onclick="selectOil(this)">
+          <span class="oil-icon">⚙️</span>
+          <span class="oil-name">Engine Oil</span>
+          <span class="oil-type">Lubricant · Used</span>
+        </button>
+        <button class="oil-btn" data-oil="castor" onclick="selectOil(this)">
+          <span class="oil-icon">🌱</span>
+          <span class="oil-name">Castor</span>
+          <span class="oil-type">Industrial</span>
+        </button>
+        <button class="oil-btn" data-oil="linseed" onclick="selectOil(this)">
+          <span class="oil-icon">🌾</span>
+          <span class="oil-name">Linseed</span>
+          <span class="oil-type">Industrial</span>
+        </button>
+      </div>
+
+      <div class="theory-box">
+        <strong>Acid Value</strong> = mg of KOH needed to neutralize free fatty acids in 1g of oil.<br>
+        <strong>Reaction:</strong> RCOOH + KOH → RCOOK + H₂O<br>
+        <strong>Indicator:</strong> Phenolphthalein (colorless → pink at endpoint)
+      </div>
+
+      <div class="input-group">
+        <label>Sample Mass (g)</label>
+        <input type="number" id="sampleMass" value="5.00" min="1" max="20" step="0.01">
+      </div>
+      <div class="input-group">
+        <label>KOH Normality (N)</label>
+        <input type="number" id="kohNorm" value="0.1" min="0.01" max="1" step="0.01">
+      </div>
+
+      <button class="run-btn" id="runBtn" onclick="startTitration()" disabled>
+        ▶ START TITRATION
+      </button>
+      <button class="reset-btn" onclick="resetAll()">↺ Reset Experiment</button>
+    </div>
+
+    <!-- Step tracker + log -->
+    <div class="panel" style="padding:16px 20px">
+      <div class="panel-title">Protocol Steps</div>
+      <div class="step-indicator">
+        <div class="step-dot" id="s1"></div>
+        <div class="step-dot" id="s2"></div>
+        <div class="step-dot" id="s3"></div>
+        <div class="step-dot" id="s4"></div>
+        <div class="step-dot" id="s5"></div>
+      </div>
+      <div class="log-box" id="logBox">
+        <div class="log-entry">» System ready. Select oil sample to begin.</div>
+        <div class="log-entry"><span class="cursor-blink"></span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ RIGHT PANEL ═══════════════ -->
+  <div class="lab-area">
+
+    <!-- Titration Visual -->
+    <div class="panel">
+      <div class="panel-title">Live Titration Chamber</div>
+      <div class="burette-area">
+
+        <!-- Burette -->
+        <div class="burette-container" style="margin-left:30px; margin-top:20px">
+          <div class="burette-label">KOH BURETTE</div>
+          <div style="position:relative">
+            <div class="burette" id="burette">
+              <div class="burette-liquid" id="buretteLiquid"></div>
+            </div>
+            <div class="burette-scale">
+              <span>0</span><span>5</span><span>10</span><span>15</span><span>20</span><span>25</span>
+            </div>
+          </div>
+          <div class="burette-tip" id="buretteTip"></div>
+          <div class="burette-label" id="kohVolDisplay" style="margin-top:6px; color: var(--accent)">0.00 mL</div>
+        </div>
+
+        <!-- Flask SVG -->
+        <div class="flask-container">
+          <svg class="flask-svg" viewBox="0 0 140 180">
+            <defs>
+              <clipPath id="flaskClip">
+                <polygon points="50,0 90,0 110,80 130,160 10,160 30,80"/>
+              </clipPath>
+              <radialGradient id="liquidGrad" cx="50%" cy="80%">
+                <stop id="gStop1" offset="0%" stop-color="#f0e8d0" stop-opacity="0.9"/>
+                <stop id="gStop2" offset="100%" stop-color="#c8b070" stop-opacity="0.95"/>
+              </radialGradient>
+            </defs>
+
+            <!-- Liquid fill -->
+            <polygon id="flaskFill" points="50,10 90,10 110,80 130,160 10,160 30,80"
+              fill="url(#liquidGrad)" opacity="0.85"/>
+
+            <!-- Swirl animation on mixing -->
+            <ellipse id="swirl" cx="70" cy="120" rx="30" ry="8"
+              fill="rgba(255,255,255,0.15)" opacity="0">
+              <animateTransform attributeName="transform" type="rotate"
+                from="0 70 120" to="360 70 120" dur="1.5s" repeatCount="indefinite"/>
+            </ellipse>
+
+            <!-- Flask outline -->
+            <polygon points="50,10 90,10 110,80 130,160 10,160 30,80"
+              fill="none" stroke="rgba(150,200,255,0.6)" stroke-width="2"/>
+            <rect x="52" y="0" width="36" height="14" rx="2"
+              fill="none" stroke="rgba(150,200,255,0.6)" stroke-width="2"/>
+
+            <!-- Pink phenolphthalein overlay (fades in at endpoint) -->
+            <polygon id="pinkOverlay" points="50,10 90,10 110,80 130,160 10,160 30,80"
+              fill="rgba(255,20,147,0)" opacity="0"
+              style="transition: all 1s ease"/>
+          </svg>
+          <div class="flask-label" id="flaskLabel">250mL Conical Flask<br>Oil + Alcohol + Phenolphthalein</div>
+        </div>
+
+        <!-- Endpoint indicator -->
+        <div style="display:flex; flex-direction:column; align-items:center; margin-bottom:20px; margin-right:10px">
+          <div class="burette-label" style="margin-bottom:8px">ENDPOINT</div>
+          <div class="endpoint-indicator" id="endpointDot">NO<br>ENDPOINT</div>
+          <div class="burette-label" style="margin-top:8px; text-align:center" id="endpointText">—</div>
+
+          <div style="margin-top:20px; width:90px">
+            <div class="burette-label" style="text-align:center">pH READING</div>
+            <div style="font-family:'Share Tech Mono'; font-size:1.6rem; color:var(--accent);
+              text-align:center; margin-top:4px" id="phDisplay">—</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Results -->
+    <div class="panel">
+      <div class="panel-title">Analysis Results</div>
+      <div class="results-grid">
+        <div class="result-card" id="rc1">
+          <div class="rc-label">KOH Volume Used</div>
+          <div class="rc-value" id="kohVolResult">—</div>
+          <div class="rc-unit">mL consumed</div>
+        </div>
+        <div class="result-card highlight" id="rc2">
+          <div class="rc-label">Acid Value</div>
+          <div class="rc-value" id="acidValResult">—</div>
+          <div class="rc-unit">mg KOH / g oil</div>
+        </div>
+        <div class="result-card" id="rc3">
+          <div class="rc-label">Free Fatty Acids</div>
+          <div class="rc-value" id="ffaResult">—</div>
+          <div class="rc-unit">% FFA (as oleic)</div>
+        </div>
+      </div>
+
+      <div class="quality-section" style="margin-top:14px">
+        <div class="quality-label">
+          <span id="qualityName">OIL QUALITY INDEX</span>
+          <span id="qualityScore">—</span>
+        </div>
+        <div class="quality-bar-bg">
+          <div class="quality-bar-fill" id="qualityBar"></div>
+        </div>
+        <div class="quality-label">
+          <span>RANCID</span>
+          <span>POOR</span>
+          <span>ACCEPTABLE</span>
+          <span>GOOD</span>
+          <span>PREMIUM</span>
+        </div>
+      </div>
+
+      <div style="margin-top:14px; background:rgba(0,0,0,0.3); border:1px solid var(--border);
+        border-radius:8px; padding:14px; font-size:0.8rem; line-height:1.7; color:#7a9ab8;
+        font-family:'Share Tech Mono', monospace" id="interpretBox">
+        Run the simulation to see detailed analysis and quality interpretation.
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<script>
+// ─── Oil reference data ───────────────────────────────────────────────────────
+// av: typical acid value (mg KOH/g), maxBIS: BIS/FSSAI permissible limit
+const oilData = {
+  coconut: { av: 0.28, color: '#f5f0e0', label: 'pale yellow', maxBIS: 0.5 },
+  sunflower: { av: 0.52, color: '#ffd700', label: 'golden yellow', maxBIS: 0.6 },
+  palm: { av: 1.85, color: '#ff8c00', label: 'orange-amber', maxBIS: 5.0 },
+  mustard: { av: 0.92, color: '#c8b400', label: 'dark yellow', maxBIS: 1.0 },
+  olive: { av: 0.42, color: '#9acd32', label: 'pale green', maxBIS: 0.8 },
+  engine: { av: 8.40, color: '#2a1a00', label: 'dark brown', maxBIS: 2.0 },
+  castor: { av: 1.60, color: '#d4c090', label: 'pale straw', maxBIS: 2.0 },
+  linseed: { av: 3.20, color: '#c8a050', label: 'amber', maxBIS: 4.0 },
+};
+
+let selectedOil = null;
+let animating = false;
+
+// ─── Oil selection ────────────────────────────────────────────────────────────
+function selectOil(btn) {
+  if (animating) return;
+  document.querySelectorAll('.oil-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  selectedOil = btn.dataset.oil;
+  document.getElementById('runBtn').disabled = false;
+
+  const oil = oilData[selectedOil];
+  log(`» Sample selected: ${btn.querySelector('.oil-name').textContent} Oil`, 'active');
+  log('» Setting up flask with sample...', 'entry');
+
+  // Update flask colour to match the oil
+  document.getElementById('gStop1').setAttribute('stop-color', oil.color);
+  document.getElementById('gStop2').setAttribute('stop-color', shadeColor(oil.color, -30));
+
+  // Reset endpoint visuals
+  document.getElementById('pinkOverlay').setAttribute('fill', 'rgba(255,20,147,0)');
+  document.getElementById('pinkOverlay').setAttribute('opacity', '0');
+  document.getElementById('endpointDot').className = 'endpoint-indicator';
+  document.getElementById('endpointDot').innerHTML = 'NO<br>ENDPOINT';
+}
+
+// ─── Utilities ────────────────────────────────────────────────────────────────
+function shadeColor(hex, amt) {
+  try {
+    let col = hex.replace('#','');
+    if (col.length === 3) col = col.split('').map(c => c+c).join('');
+    const r = Math.min(255, Math.max(0, parseInt(col.substring(0,2),16) + amt));
+    const g = Math.min(255, Math.max(0, parseInt(col.substring(2,4),16) + amt));
+    const b = Math.min(255, Math.max(0, parseInt(col.substring(4,6),16) + amt));
+    return `rgb(${r},${g},${b})`;
+  } catch { return hex; }
+}
+
+function log(msg, type = 'entry') {
+  const box = document.getElementById('logBox');
+  const cursor = box.querySelector('.cursor-blink');
+  const div = document.createElement('div');
+  div.className = `log-entry ${type}`;
+  div.textContent = msg;
+  if (cursor) cursor.parentElement.remove();
+  box.appendChild(div);
+  const curDiv = document.createElement('div');
+  curDiv.className = 'log-entry';
+  curDiv.innerHTML = '<span class="cursor-blink"></span>';
+  box.appendChild(curDiv);
+  box.scrollTop = box.scrollHeight;
+}
+
+function setStep(n) {
+  for (let i = 1; i <= 5; i++) {
+    const dot = document.getElementById('s' + i);
+    dot.className = i < n ? 'step-dot done' : i === n ? 'step-dot active' : 'step-dot';
+  }
+}
+
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+// ─── Main titration animation ─────────────────────────────────────────────────
+async function startTitration() {
+  if (!selectedOil || animating) return;
+  animating = true;
+  document.getElementById('runBtn').disabled = true;
+  document.querySelectorAll('.oil-btn').forEach(b => b.style.pointerEvents = 'none');
+
+  const oil = oilData[selectedOil];
+  const mass = parseFloat(document.getElementById('sampleMass').value) || 5.0;
+  const N = parseFloat(document.getElementById('kohNorm').value) || 0.1;
+
+  // Add ±2 % randomness to simulate real-world variation
+  const AV = oil.av * (1 + (Math.random() - 0.5) * 0.04);
+  const V_mL = (AV * mass) / (N * 56.1); // V = (AV × W) / (N × 56.1)
+  const FFA = AV / 1.99; // FFA% = AV / 1.99 (oleic acid basis)
+
+  // ── Step 1: Weighing ────────────────────────────────────────────────────────
+  setStep(1);
+  log('» [Step 1] Weighing oil sample on analytical balance...', 'active');
+  await sleep(1200);
+  log(`» Sample mass: ${mass.toFixed(2)} g ✓`, 'done');
+
+  // ── Step 2: Dissolving + indicator ─────────────────────────────────────────
+  setStep(2);
+  log('» [Step 2] Dissolving in 25 mL ethanol + 2 drops phenolphthalein...', 'active');
+  await sleep(1000);
+  document.getElementById('swirl').setAttribute('opacity', '0.4');
+  await sleep(800);
+  document.getElementById('swirl').setAttribute('opacity', '0');
+  log(`» Flask prepared. Initial solution colour: ${oil.label}`, 'done');
+
+  // ── Step 3: Fill burette ────────────────────────────────────────────────────
+  setStep(3);
+  log('» [Step 3] Filling burette with KOH solution...', 'active');
+  document.getElementById('buretteLiquid').style.height = '90%';
+  await sleep(1000);
+  log(`» Burette filled. KOH = ${N} N. Initial reading = 0.00 mL`, 'done');
+
+  // ── Step 4: Dropwise titration ──────────────────────────────────────────────
+  setStep(4);
+  log('» [Step 4] Adding KOH dropwise — monitoring for endpoint...', 'active');
+  await sleep(500);
+
+  const STEPS = 40;
+  const stepVol = V_mL / STEPS;
+  const initialHeight = 90; // % burette fill at start
+
+  for (let i = 0; i < STEPS; i++) {
+    await sleep(80 + Math.random() * 50);
+    const frac = i / STEPS;
+    const currentVol = (i + 1) * stepVol;
+
+    // Animate burette emptying
+    document.getElementById('buretteLiquid').style.height =
+      (initialHeight - frac * 55) + '%';
+    document.getElementById('kohVolDisplay').textContent =
+      currentVol.toFixed(2) + ' mL';
+
+    // Simulate pH climbing toward neutralisation
+    const pH = 4.5 + frac * 5.5;
+    document.getElementById('phDisplay').textContent = pH.toFixed(1);
+
+    // Near endpoint (last 15 %): gradually blush the flask pink
+    if (i > STEPS * 0.85) {
+      const alpha = ((i - STEPS * 0.85) / (STEPS * 0.15)) * 0.05;
+      document.getElementById('pinkOverlay').setAttribute('fill', `rgba(255,20,147,${alpha})`);
+      document.getElementById('pinkOverlay').setAttribute('opacity', '1');
+    }
+
+    // Log progress every 8 steps
+    if (i % 8 === 0)
+      log(`» Volume: ${currentVol.toFixed(2)} mL | pH: ${pH.toFixed(1)}`, 'entry');
+  }
+
+  // ── Step 5: Endpoint reached ────────────────────────────────────────────────
+  setStep(5);
+  await sleep(200);
+
+  // Flash solution fully pink
+  document.getElementById('pinkOverlay').setAttribute('fill', 'rgba(255,20,147,0.45)');
+  document.getElementById('gStop1').setAttribute('stop-color', 'rgba(255,150,200,0.9)');
+  document.getElementById('gStop2').setAttribute('stop-color', 'rgba(220,80,160,0.95)');
+
+  const epdot = document.getElementById('endpointDot');
+  epdot.classList.add('pink');
+  epdot.innerHTML = 'PINK<br>ENDPOINT';
+  document.getElementById('endpointText').textContent = 'Persistent pink ≥ 15 s';
+  document.getElementById('phDisplay').textContent = '8.2';
+
+  log('» [Step 5] ENDPOINT REACHED — Persistent pink colour!', 'warn');
+  log(`» Final burette reading: ${V_mL.toFixed(2)} mL`, 'done');
+  await sleep(600);
+
+  // ── Calculate final results ─────────────────────────────────────────────────
+  const finalAV = (V_mL * N * 56.1) / mass; // core formula
+
+  document.getElementById('kohVolResult').textContent = V_mL.toFixed(2);
+  document.getElementById('acidValResult').textContent = finalAV.toFixed(2);
+  document.getElementById('ffaResult').textContent = FFA.toFixed(3);
+
+  // Quality bar (100 % = perfectly fresh, 0 % = at/above limit)
+  const pct = Math.max(0, Math.min(100, 100 * (1 - finalAV / oil.maxBIS)));
+  const qColor = pct > 80 ? '#00ff88' : pct > 50 ? '#ffd700' : pct > 20 ? '#ff6b35' : '#ff3366';
+  const qualBar = document.getElementById('qualityBar');
+  qualBar.style.width = pct + '%';
+  qualBar.style.background = `linear-gradient(90deg, #ff3366, ${qColor})`;
+
+  // Grade and interpretation text
+  let grade, interpret;
+  if (finalAV <= oil.maxBIS * 0.3) {
+    grade = 'PREMIUM';
+    interpret = `✅ Excellent quality oil. Very low free fatty acid content. AV = ${finalAV.toFixed(2)} mg KOH/g is well within the BIS/FSSAI standard of ${oil.maxBIS} mg KOH/g. Minimal oxidative degradation detected.`;
+  } else if (finalAV <= oil.maxBIS * 0.7) {
+    grade = 'ACCEPTABLE';
+    interpret = `🟡 Acceptable quality. AV = ${finalAV.toFixed(2)} mg KOH/g is within the permissible BIS limit of ${oil.maxBIS}. Some free fatty acids present — possibly due to exposure to heat or moisture. Suitable for consumption/use.`;
+  } else if (finalAV <= oil.maxBIS) {
+    grade = 'BORDERLINE';
+    interpret = `⚠️ Borderline quality. AV = ${finalAV.toFixed(2)} mg KOH/g is close to the maximum BIS limit of ${oil.maxBIS} mg KOH/g. Significant free fatty acids (${FFA.toFixed(2)} % FFA). Use with caution.`;
+  } else {
+    grade = 'DEGRADED';
+    interpret = `❌ FAIL — AV = ${finalAV.toFixed(2)} mg KOH/g EXCEEDS the BIS standard of ${oil.maxBIS} mg KOH/g. Oil is rancid/degraded. High FFA (${FFA.toFixed(2)} %) indicates significant hydrolytic rancidity. NOT suitable for use.`;
+  }
+
+  document.getElementById('qualityScore').textContent = grade;
+  document.getElementById('interpretBox').innerHTML =
+    `<strong style="color:var(--accent)">INTERPRETATION:</strong><br>${interpret}<br><br>` +
+    `<strong style="color:var(--accent)">FORMULA USED:</strong><br>` +
+    `Acid Value = (V × N × 56.1) / W = ` +
+    `(${V_mL.toFixed(2)} × ${N} × 56.1) / ${mass.toFixed(2)} = ` +
+    `<strong style="color:var(--green)">${finalAV.toFixed(2)} mg KOH/g</strong>`;
+
+  log(`» Acid Value = ${finalAV.toFixed(2)} mg KOH/g`, 'done');
+  log(`» FFA = ${FFA.toFixed(3)} %`, 'done');
+  log(`» Quality Grade: ${grade}`, finalAV <= oil.maxBIS ? 'done' : 'warn');
+  log('» ✓ Experiment complete.', 'done');
+
+  animating = false;
+}
+
+// ─── Reset ────────────────────────────────────────────────────────────────────
+function resetAll() {
+  if (animating) return;
+  selectedOil = null;
+
+  document.querySelectorAll('.oil-btn').forEach(b => {
+    b.classList.remove('selected');
+    b.style.pointerEvents = '';
+  });
+
+  document.getElementById('runBtn').disabled = true;
+  document.getElementById('buretteLiquid').style.height = '80%';
+  document.getElementById('kohVolDisplay').textContent = '0.00 mL';
+  document.getElementById('phDisplay').textContent = '—';
+  document.getElementById('pinkOverlay').setAttribute('fill', 'rgba(255,20,147,0)');
+  document.getElementById('pinkOverlay').setAttribute('opacity', '0');
+  document.getElementById('gStop1').setAttribute('stop-color', '#f0e8d0');
+  document.getElementById('gStop2').setAttribute('stop-color', '#c8b070');
+
+  const epdot = document.getElementById('endpointDot');
+  epdot.className = 'endpoint-indicator';
+  epdot.innerHTML = 'NO<br>ENDPOINT';
+  document.getElementById('endpointText').textContent = '—';
+
+  document.getElementById('kohVolResult').textContent = '—';
+  document.getElementById('acidValResult').textContent = '—';
+  document.getElementById('ffaResult').textContent = '—';
+  document.getElementById('qualityScore').textContent = '—';
+  document.getElementById('qualityBar').style.width = '0%';
+  document.getElementById('interpretBox').textContent =
+    'Run the simulation to see detailed analysis and quality interpretation.';
+
+  for (let i = 1; i <= 5; i++)
+    document.getElementById('s' + i).className = 'step-dot';
+
+  document.getElementById('logBox').innerHTML =
+    '<div class="log-entry">» System reset. Select oil sample to begin.</div>' +
+    '<div class="log-entry"><span class="cursor-blink"></span></div>';
+}
+</script>
+</body>
+</html>
